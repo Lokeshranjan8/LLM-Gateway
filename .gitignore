@@ -1,0 +1,33 @@
+# Python-generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local Python environments
+.venv/
+venv/
+env/
+
+# Secrets and local environment configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local data and logs
+*.log
+*.sqlite3
+data/
+
+# Local Docker overrides
+docker-compose.override.yml
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
