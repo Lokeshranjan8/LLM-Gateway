@@ -7,7 +7,7 @@ MAX_RETRIES = 2
 
 
 def call_provider(provider_name: str, url: str, message: str) -> dict:
-    """Call one provider. Retry only timeout and HTTP 5xx failures."""
+    """Call one provider. Retry timeout, connection, and HTTP 5xx failures."""
 
     for attempt in range(1, MAX_RETRIES + 2):
         print(f"Calling {provider_name}...")
@@ -55,10 +55,15 @@ def call_provider(provider_name: str, url: str, message: str) -> dict:
             )
 
         except requests.exceptions.ConnectionError:
-            # A connection error is not in today's retry requirement.
+            print(f"Attempt {attempt} failed: unable to connect")
+
+            if attempt <= MAX_RETRIES:
+                print("Retrying...")
+                continue
+
             raise HTTPException(
                 status_code=503,
-                detail=f"Unable to connect to {provider_name}.",
+                detail=f"Unable to connect to {provider_name} after {MAX_RETRIES} retries.",
             )
 
         except HTTPException:
