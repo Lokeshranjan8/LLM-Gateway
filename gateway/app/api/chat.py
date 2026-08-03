@@ -11,5 +11,7 @@ provider_router = ProviderRouter()
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest) -> ChatResponse:
-    # Pass the request to the router. The router chooses Mock A or Mock B.
-    return await provider_router.chat(request)
+    print(f"Request received: provider={request.provider}")
+    response = await provider_router.chat(request)
+    print(f"Returning response: provider={response.provider}")
+    return response
