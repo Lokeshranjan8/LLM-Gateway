@@ -19,6 +19,9 @@ services:
 
   gateway:
     build: ./gateway
+    environment:
+      CIRCUIT_FAILURE_THRESHOLD: ${CIRCUIT_FAILURE_THRESHOLD:-3}
+      CIRCUIT_COOLDOWN_SECONDS: ${CIRCUIT_COOLDOWN_SECONDS:-10}
     ports:
       - "8000:8000"
     depends_on:

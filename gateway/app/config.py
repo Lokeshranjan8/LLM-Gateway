@@ -8,5 +8,9 @@ class Settings(BaseSettings):
     provider_a_url: str = "http://mock-provider-a:8000"
     provider_b_url: str = "http://mock-provider-b:8000"
 
+    # Circuit breaker values can be changed with environment variables.
+    circuit_failure_threshold: int = 3
+    circuit_cooldown_seconds: int = 10
+
 
 settings = Settings()
