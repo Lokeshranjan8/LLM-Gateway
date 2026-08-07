@@ -12,8 +12,9 @@ class Settings(BaseSettings):
     circuit_failure_threshold: int = 3
     circuit_cooldown_seconds: int = 10
 
-    #token bucket algorithm config
-    token_bucket_capacity: int=6
-    refill_rate: int=1
+    # Token bucket rate-limit configuration.
+    token_bucket_capacity: int = 6
+    refill_rate: int = 1
+    rate_limit_key_prefix: str = "rate_limit"
 
 settings = Settings()
