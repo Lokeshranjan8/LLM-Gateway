@@ -126,32 +126,6 @@ flowchart TD
 
 ---
 
-## 🔄 Request Lifecycle (step by step)
-
-1. **Client sends** `POST /v1/chat` with a JSON body like `{"message": "Hello", "provider": "mock_a"}`.
-2. **API layer** (`app/api/chat.py`) receives the request and asks the **rate limiter** for a token.
-3. **Rate limiter** (`app/rate_limit/token_bucket.py`) runs an atomic **Lua script in Redis**.
-   - Each client IP gets its own bucket (capacity `6`, refill `1` token/sec).
-   - If the bucket is empty → responds `429 Too Many Requests` with `Retry-After` and `X-RateLimit-*` headers.
-   - If Redis is unreachable → **fails closed** with `503` (no unthrottled paid traffic).
-4. **Provider Router** (`app/router/router.py`) selects the **primary provider**:
-   - `provider: "mock_a"` → Mock A primary, Mock B fallback (default)
-   - `provider: "mock_b"` → Mock B primary, Mock A fallback
-5. **Circuit breaker** (`app/circuit_breaker.py`) checks the primary provider's health:
-   - `CLOSED` → allow the call.
-   - `OPEN` (cooldown not expired) → skip to **fallback** immediately.
-   - `HALF_OPEN` (cooldown expired, one test request running) → use fallback for new requests.
-6. **Provider adapter** (`app/providers/mock_a.py` / `mock_b.py`) sends the message through the **retry helper**.
-7. **Retry helper** (`app/retry.py`) calls the provider over Docker's internal network (`http://mock-provider-a:8000/chat`).
-   - **2 retries** on timeouts, connection errors, and HTTP 5xx.
-   - **No retry** on HTTP 4xx (client errors).
-8. **On success** → `record_success()` closes the circuit, resets failure count, and the `ChatResponse` travels back up to the client as `200 OK`.
-9. **On failure** (5xx / timeout / connection) → `record_failure()` increments the counter:
-   - After **3 failures** (default) → circuit **opens** for **10 seconds** (default), then goes `HALF_OPEN`.
-   - The router **switches to the fallback provider**.
-   - If the fallback also fails → `502 Bad Gateway` ("Both the primary and fallback providers failed.").
-
----
 
 ## 📁 Project Structure
 
