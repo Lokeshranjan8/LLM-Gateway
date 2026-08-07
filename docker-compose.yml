@@ -1,4 +1,13 @@
 services:
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
   mock-provider-a:
     build: ./mock_provider_a
     healthcheck:
@@ -22,9 +31,12 @@ services:
     environment:
       CIRCUIT_FAILURE_THRESHOLD: ${CIRCUIT_FAILURE_THRESHOLD:-3}
       CIRCUIT_COOLDOWN_SECONDS: ${CIRCUIT_COOLDOWN_SECONDS:-10}
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     depends_on:
+      redis:
+        condition: service_healthy
       mock-provider-a:
         condition: service_healthy
       mock-provider-b:
