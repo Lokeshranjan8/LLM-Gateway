@@ -21,6 +21,19 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      prom-server:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
   mock-provider-a:
     build: ./mock_provider_a
     healthcheck:
