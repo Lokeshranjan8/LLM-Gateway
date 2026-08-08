@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 
 from app.circuit_breaker import CircuitBreaker
+from app.metrics import fallback_total
 from app.config import settings
 from app.providers.mock_a import MockProviderA
 from app.providers.mock_b import MockProviderB
@@ -61,6 +62,7 @@ class ProviderRouter:
 
     async def call_fallback(self,fallback_name: str,fallback_provider,request: ChatRequest,) -> ChatResponse:
         print(f"Switching to fallback: {fallback_name}")
+        fallback_total.inc()
 
         try:
             response = await fallback_provider.chat(request)

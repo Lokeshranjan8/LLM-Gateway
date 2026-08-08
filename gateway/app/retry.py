@@ -3,6 +3,8 @@
 from fastapi import HTTPException
 import requests
 
+from app.metrics import provider_failures_total, provider_requests_total, retry_total
+
 MAX_RETRIES = 2
 
 
@@ -10,6 +12,7 @@ def call_provider(provider_name: str, url: str, message: str) -> dict:
     """Call one provider. Retry timeout, connection, and HTTP 5xx failures."""
 
     for attempt in range(1, MAX_RETRIES + 2):
+        provider_requests_total.labels(provider=provider_name).inc()
         print(f"Calling {provider_name}...")
 
         try:
@@ -28,8 +31,10 @@ def call_provider(provider_name: str, url: str, message: str) -> dict:
 
                 if attempt <= MAX_RETRIES:
                     print("Retrying...")
+                    retry_total.inc()
                     continue
 
+                provider_failures_total.labels(provider=provider_name).inc()
                 raise HTTPException(
                     status_code=502,
                     detail=f"{provider_name} failed after {MAX_RETRIES} retries.",
@@ -37,6 +42,7 @@ def call_provider(provider_name: str, url: str, message: str) -> dict:
 
             # HTTP 400-499 are client errors. Do not retry them.
             print(f"HTTP {response.status_code} received. Not retrying.")
+            provider_failures_total.labels(provider=provider_name).inc()
             raise HTTPException(
                 status_code=response.status_code,
                 detail=f"{provider_name} returned a client error.",
@@ -47,8 +53,10 @@ def call_provider(provider_name: str, url: str, message: str) -> dict:
 
             if attempt <= MAX_RETRIES:
                 print("Retrying...")
+                retry_total.inc()
                 continue
 
+            provider_failures_total.labels(provider=provider_name).inc()
             raise HTTPException(
                 status_code=504,
                 detail=f"{provider_name} timed out after {MAX_RETRIES} retries.",
@@ -59,8 +67,10 @@ def call_provider(provider_name: str, url: str, message: str) -> dict:
 
             if attempt <= MAX_RETRIES:
                 print("Retrying...")
+                retry_total.inc()
                 continue
 
+            provider_failures_total.labels(provider=provider_name).inc()
             raise HTTPException(
                 status_code=503,
                 detail=f"Unable to connect to {provider_name} after {MAX_RETRIES} retries.",
@@ -71,6 +81,7 @@ def call_provider(provider_name: str, url: str, message: str) -> dict:
 
         except Exception as error:
             print(f"Unexpected provider error: {str(error)}")
+            provider_failures_total.labels(provider=provider_name).inc()
             raise HTTPException(
                 status_code=500,
                 detail="An unexpected provider error occurred.",
