@@ -1,7 +1,7 @@
 """The HTTP door into the gateway."""
 
 from fastapi import APIRouter, HTTPException, Request, Response
-
+from app.metrics import request_counter
 from app.config import settings
 from app.rate_limit.token_bucket import TokenBucket
 from app.router.router import ProviderRouter
@@ -13,12 +13,9 @@ token_bucket = TokenBucket()
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(
-    chat_request: ChatRequest,
-    http_request: Request,
-    http_response: Response,
-) -> ChatResponse:
+async def chat( chat_request: ChatRequest,http_request: Request,http_response: Response,) -> ChatResponse:
     # There is no authentication yet, so use the client IP as the bucket ID.
+    request_counter.inc()
     client_id = http_request.client.host if http_request.client else "unknown"
     limit = token_bucket.check_rate_limit(client_id)
 
