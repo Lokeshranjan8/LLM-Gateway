@@ -17,4 +17,8 @@ class Settings(BaseSettings):
     refill_rate: int = 1
     rate_limit_key_prefix: str = "rate_limit"
 
+    # Groq provider configuration. GROQ_API_KEY comes from the environment.
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
+
 settings = Settings()

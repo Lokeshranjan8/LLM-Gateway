@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from app.circuit_breaker import CircuitBreaker
 from app.metrics import fallback_total
 from app.config import settings
+from app.providers.groq import GroqProvider
 from app.providers.mock_a import MockProviderA
 from app.providers.mock_b import MockProviderB
 from app.schemas import ChatRequest, ChatResponse
@@ -10,8 +11,17 @@ from app.schemas import ChatRequest, ChatResponse
 
 class ProviderRouter:
     def __init__(self) -> None:
-        self.providers = {"mock_a": MockProviderA(), "mock_b": MockProviderB()}
+        self.providers = {
+            "groq": GroqProvider(),
+            "mock_a": MockProviderA(),
+            "mock_b": MockProviderB(),
+        }
         self.circuits = {
+            "groq": CircuitBreaker(
+                "Groq",
+                settings.circuit_failure_threshold,
+                settings.circuit_cooldown_seconds,
+            ),
             "mock_a": CircuitBreaker(
                 "Mock A",
                 settings.circuit_failure_threshold,
@@ -25,17 +35,23 @@ class ProviderRouter:
         }
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
-        # Mock A is the default primary provider.
+        # Groq is the default primary provider. Mock A stays available for testing.
         if request.provider == "mock_b":
             primary_key = "mock_b"
             primary_name = "Mock B"
             primary_provider = self.providers["mock_b"]
-            fallback_name = "Mock A"
-            fallback_provider = self.providers["mock_a"]
-        else:
+            fallback_name = "Groq"
+            fallback_provider = self.providers["groq"]
+        elif request.provider == "mock_a":
             primary_key = "mock_a"
             primary_name = "Mock A"
             primary_provider = self.providers["mock_a"]
+            fallback_name = "Mock B"
+            fallback_provider = self.providers["mock_b"]
+        else:
+            primary_key = "groq"
+            primary_name = "Groq"
+            primary_provider = self.providers["groq"]
             fallback_name = "Mock B"
             fallback_provider = self.providers["mock_b"]
 

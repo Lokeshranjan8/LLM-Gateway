@@ -7,33 +7,6 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
-  prom-server:
-    image: prom/prometheus
-    ports:
-      - "9090:9090"
-    depends_on:
-      - gateway
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "http://localhost:9090/-/healthy"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
-  grafana:
-    image: grafana/grafana
-    ports:
-      - "3000:3000"
-    depends_on:
-      prom-server:
-        condition: service_healthy
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-    volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
   mock-provider-a:
     build: ./mock_provider_a
     healthcheck:
@@ -58,9 +31,11 @@ services:
       CIRCUIT_FAILURE_THRESHOLD: ${CIRCUIT_FAILURE_THRESHOLD:-3}
       CIRCUIT_COOLDOWN_SECONDS: ${CIRCUIT_COOLDOWN_SECONDS:-10}
       REDIS_URL: redis://redis:6379/0
-      TOKEN_BUCKET_CAPACITY: ${TOKEN_BUCKET_CAPACITY:-6}
-      REFILL_RATE: ${REFILL_RATE:-1}
+      TOKEN_BUCKET_CAPACITY: ${TOKEN_BUCKET_CAPACITY:-1000}
+      REFILL_RATE: ${REFILL_RATE:-600}
       RATE_LIMIT_KEY_PREFIX: ${RATE_LIMIT_KEY_PREFIX:-rate_limit}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
     ports:
       - "8000:8000"
     depends_on:
